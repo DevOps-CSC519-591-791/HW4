@@ -168,7 +168,7 @@ var server = app.listen(portNum, function() {
   var port = server.address().port
   // Delete existing key
   client.del("serverSet");
-  client.sadd("serverSet", 'http://0.0.0.0:' + port);
+  client.sadd("serverSet", port);
   // asynchronously obtain length of the server list
  //  client.scard("serverSet", function(err, value){
 	// if(err) throw err
