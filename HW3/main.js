@@ -103,8 +103,8 @@ app.get('/listservers', function(req, res) {
 	client.smembers("serverSet", function(err, servers){
 		if(err) throw err
 		res.writeHead(200, {'content-type':'text/html'});
-		servers.forEach(function (serverDetail){
-			res.write("<p>" + serverDetail + "</p>");
+		servers.forEach(function (serverPort){
+			res.write("<p>http://0.0.0.0:" + serverPort + "</p>");
 		});
 		console.log("===================================");
 		res.end();
@@ -123,7 +123,7 @@ app.get('/spawn', function(req, res) {
 			var host = server.address().address
 			var port = server.address().port
 			serverSetLen += 1;
-			client.sadd("serverSet", 'http://0.0.0.0:' + portNum);
+			client.sadd("serverSet", portNum);
 			console.log('A new app listening at http://%s:%s', host, port)
 			console.log("serverSetLen: " + serverSetLen);
 			console.log("===================================");
@@ -141,15 +141,15 @@ app.get('/destroy', function(req, res) {
 		if(err) throw err
 		serverSetLen = value;
 		if(serverSetLen > 1){
-			client.spop("serverSet", function(err, serverDetail){
+			client.spop("serverSet", function(err, serverPort){
 				if(err) throw err
-				var port = parseInt(serverDetail.match(/[0-9]{4}/)[0]);
+				var port = serverPort;
 				var server = serverHashMap.get(port);
-			  	// var server = app.listen(serverDetail.match(/[0-9]{4}/)[0]);
+			  	// var server = app.listen(serverPort.match(/[0-9]{4}/)[0]);
 				server.close(function(err, value){
 					if(err) throw err
 					serverSetLen -= 1;
-					console.log("A server (" + serverDetail + ") is deleted successfully.");
+					console.log("A server (http://0.0.0.0:" + serverPort + ") is deleted successfully.");
 	  				console.log("serverSetLen: " + serverSetLen);
 					console.log("===================================");
 				});

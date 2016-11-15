@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "http-proxy": "^1.9.0"
+    "http-proxy": "^1.9.0",
+    "redis": "^0.12.1"
   }
 }

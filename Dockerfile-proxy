@@ -12,5 +12,5 @@ COPY ./Deployment /Deployment
 # Install app dependencies
 RUN cd /Deployment; npm install
 
-EXPOSE 8080
+EXPOSE 8080 3000-3005 6379
 CMD ["node", "/Deployment/infrastructure.js"]
