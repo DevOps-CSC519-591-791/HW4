@@ -1,4 +1,4 @@
-hw4-basic-image2:
+app:
     build: .
     links:
         - redis

@@ -9,7 +9,7 @@ var serverHashMap = new HashMap();
 var portNum	= 3000;
 var serverSetLen = 0;
 // REDIS
-var client = redis.createClient(6379, '127.0.0.1', {});
+var client = redis.createClient(6379, 'redis', {});
 
 ///////////// WEB ROUTES
 // Add hook to make it easier to get all visited URLS.
