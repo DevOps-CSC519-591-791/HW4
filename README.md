@@ -17,6 +17,41 @@ curl container-with-socat:9001
 
 ### Prerequisite
 #### HW4 file structure
+```
+.
+├── App
+│   ├── app.js
+│   ├── img
+│   ├── package.json
+│   ├── README.md
+│   └── uploads
+├── container-creator.sh
+├── docker-compose.yml
+├── Dockerfile-app
+├── Dockerfile-container-with-curl
+├── Dockerfile-container-with-socat
+├── Dockerfile-proxy
+├── post-receive
+├── Proxy
+│   ├── package.json
+│   ├── proxy.js
+│   └── README.md
+├── README.md
+├── redis-bash
+└── Simple-nodejs-app
+```
+
+ - Folder `App` stores files from HW#.
+ - File `container-creator.sh` is used to spawn/scale a new container.
+ - File `docker-compose.yml` is the configuration file of docker-compose.
+ - File `Dockerfile-app` is the dockerfile to build the app service docker image.
+ - File `Dockerfile-proxy` is the dockerfile to build the proxy service docker image.
+ - File `Dockerfile-container-with-socat` is the dockerfile to build the container-with-socat docker image.
+ - File `Dockerfile-container-with-curl` is the dockerfile to build the container-with-curl docker image.
+ - File `post-receive` is the hook used in task2.
+ - Folder `Proxy` stores files for proxy server.
+ - Folder `redis-bash` is the bash library used to access redis from bash script directly.
+ - Folder `Simple-nodejs-app` stores a simple node.js application used in task2.
 
 ### TASK1: `Docker Compose`
 **Requirement:**
