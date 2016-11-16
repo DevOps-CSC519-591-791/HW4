@@ -1,0 +1,40 @@
+#!/bin/sh
+cd /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app/
+
+echo '=======Stop, untag and remove existing image=========='
+docker stop app
+docker rmi localhost:5000/ncsu:current
+docker rmi localhost:5000/ncsu:latest
+docker rmi ncsu-app:latest
+
+# build image
+echo '=======Build image=========='
+docker build -t ncsu-app .
+
+# tag image correctly first with registry host, which is localhost:5000 here
+echo '=======Tag image first with registry host=========='
+docker tag ncsu-app localhost:5000/ncsu:latest
+
+# push image to local private registry
+echo '=======Push image to local registry=========='
+docker push localhost:5000/ncsu:latest
+
+# make new directory
+echo '=======Make new directory=========='
+rm -rf /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app-deployed/
+mkdir /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app-deployed/
+cd /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app-deployed/
+
+echo '=======Pull image from local registry=========='
+docker pull localhost:5000/ncsu:latest
+
+echo '=======Stop and remove existing container and image=========='
+docker stop app
+docker rm app
+docker rmi localhost:5000/ncsu:current
+
+echo '=======Tag a new name to pulled image=========='
+docker tag localhost:5000/ncsu:latest localhost:5000/ncsu:current
+
+echo '=======Run docker on 0.0.0.0:8081=========='
+docker run -p 8081:8080 -d --name app localhost:5000/ncsu:current
