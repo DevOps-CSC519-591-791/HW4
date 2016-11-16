@@ -1,0 +1,6 @@
+FROM ubuntu:14.04
+
+RUN apt-get -y update
+RUN apt-get -y install socat
+RUN echo "People are awesome!" > output
+CMD socat TCP-LISTEN:9001 SYSTEM:'cat output'
