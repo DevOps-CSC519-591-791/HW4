@@ -7,4 +7,7 @@ docker-compose build
 docker-compose up
 docker build -f Dockerfile-container-with-socat -t container-with-socat .
 docker build -f Dockerfile-container-with-curl -t container-with-curl .
+docker run -d --name container-with-socat container-with-socat
+docker run -it --rm --name container-with-curl --link container-with-socat container-with-curl /bin/bash
+curl container-with-socat:9001
 ```
