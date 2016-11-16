@@ -77,12 +77,106 @@ echo 'Sleep 5 seconds'
 sleep 5
 
 echo 'Add port to redis'
-# redis-bash-cli -h $REDIS_IP SADD serverSet $NEW_PORT
 for i in `seq 1 $1`; do
 	redis-bash-cli -h $REDIS_IP SADD serverSet "300$i"
 done
 ```
 
-I first tried to get the redis container ip address and read the current number of ips from the first argument of command. After that I will generate a new port and use `docker-compose scale` to scale the app service to certain number. And at last I will add ports to redis key (serverSet). For some reason, after docker-compose scale, the data in redis will be reset. So when I add ports to redis key, I will actually enter a loop and add the original and new ports one by one to keep the data consistency. You can run the script by the command `bash container-creator.sh [num of scale service]`.
+I first tried to get the redis container ip address and read the current number of ips from the first argument of command. After that I will generate a new port and use `docker-compose scale` to scale the app service to certain number. And at last I will add ports to redis key (serverSet). I used the [redis-bash-cli](https://github.com/caquino/redis-bash) to access redis from bash script directly. For some reason, after docker-compose scale, the data in redis will be reset. So when I add ports to redis key, I will actually enter a loop and add the original and new ports one by one to keep the data consistency (You can check the content of serverSet key in redis by running the command `redis-bash-cli -h $REDIS_IP SMEMBERS serverSet`). You can run the script of spawn/scale new container by the command `bash container-creator.sh [num of scale service]`.
 
 > eg. For first time spawn/scale an app container, I can run the command `bash container-creator.sh 1`. It will tell the bash script that the current number of ip is 1 and the newly-generated port is `3001`. Also, docker-compose will scale the app container to 2. Since there is one app container is already running after `docker-compose up`, scale the app container to 2 is actually add another app containers. And the script will also keep data in redis consist. For next time you want to spawn/scale an app container, you can just run the command `bash container-creator.sh 2`.
+
+### TASK2: `Docker Deploy`
+**Requirement:**
+ - On post-receive will build a new docker image.
+ - Push to local registery.
+ - Deploy the dockerized simple node.js App. Add appropriate hook commands to pull from registery, stop, and restart containers.
+ 
+Basically, I wrote a [post-receive](https://github.ncsu.edu/zhu6/HW4/blob/master/post-receive) hook to meet all the requirements.
+
+> Since post-receive hook is triggered after entire process is completed (after the server receive `git push` in this case). You have to put this hook at the server end.
+
+Below is the detail of this hook.
+```
+#!/bin/sh
+cd /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app/
+
+echo '=======Stop, untag and remove existing image=========='
+docker stop app
+docker rmi localhost:5000/ncsu:current
+docker rmi localhost:5000/ncsu:latest
+docker rmi ncsu-app:latest
+
+# build image
+echo '=======Build image=========='
+docker build -t ncsu-app .
+
+# tag image correctly first with registry host, which is localhost:5000 here
+echo '=======Tag image first with registry host=========='
+docker tag ncsu-app localhost:5000/ncsu:latest
+
+# push image to local private registry
+echo '=======Push image to local registry=========='
+docker push localhost:5000/ncsu:latest
+
+# make new directory
+echo '=======Make new directory=========='
+rm -rf /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app-deployed/
+mkdir /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app-deployed/
+cd /home/expertiza_developer/DevOps/HW4/Simple-nodejs-app-deployed/
+
+echo '=======Pull image from local registry=========='
+docker pull localhost:5000/ncsu:latest
+
+echo '=======Stop and remove existing container and image=========='
+docker stop app
+docker rm app
+docker rmi localhost:5000/ncsu:current
+
+echo '=======Tag a new name to pulled image=========='
+docker tag localhost:5000/ncsu:latest localhost:5000/ncsu:current
+
+echo '=======Run docker on 0.0.0.0:8081=========='
+docker run -p 8081:8080 -d --name app localhost:5000/ncsu:current
+```
+
+Basically, I did following things in this hook:
+ - Stop, untag and remove existing image
+ - Build a new docker image tagged ncsu-app
+ - Tag image ncsu-app to localhost:5000/ncsu:latest
+ - Push image to local registry
+ - Make a new directory locally to mock the remote server
+ - Pull image from local registry
+ - Stop and remove existing container and image
+ - Tag a new name to pulled image
+ - Run docker on port 8080 and map port 8080 in container to port 8081 on host machine
+ 
+After that you can access the app from broswer with the address `0.0.0.0:8081`.
+
+### TASK3: `File IO`
+**Requirement:**
+ - Create a container that runs a command that outputs to a file.
+ - Use socat to map file access to read file container and expose over port 9001 (hint can use SYSTEM + cat).
+ - Use a linked container that access that file over network. The linked container can just use a command such as curl to access data from other container.
+ 
+For this task, I build two docker images by using [Dockerfile-container-with-socat](Dockerfile-container-with-socat) and [Dockerfile-container-with-curl](https://github.ncsu.edu/zhu6/HW4/blob/master/Dockerfile-container-with-curl).
+
+For `container-with-socat`, the content of its dockerfile is shown below:
+```
+FROM ubuntu:14.04
+RUN apt-get -y update
+RUN apt-get -y install socat
+RUN echo "People are awesome!" > output
+CMD socat TCP-LISTEN:9001 SYSTEM:'cat output'
+```
+
+The container-with-socat docker image is based on Ubuntu 14.04. And I installed socat in it and also wrote a sentence to a file named output. Then I wrote `CMD socat TCP-LISTEN:9001 SYSTEM:'cat output'` this line to use socat to map file access to another container and expose over port 9001. I built this image by the command `docker build -f Dockerfile-container-with-socat -t container-with-socat .` and I ran the container in the background by the command `docker run -d --name container-with-socat container-with-socat`.
+
+For `container-with-curl`, the content of its dockerfile is below:
+```
+FROM ubuntu:14.04
+RUN apt-get -y update
+RUN apt-get -y install curl
+```
+
+The container-with-curl docker image is also based to Ubuntu 14.04. And I installed curl to access the data from container-with-socat. I build this image by the command `docker build -f Dockerfile-container-with-curl -t container-with-curl .` and I ran the container and enter its terminal by the command `docker run -it --rm --name container-with-curl --link container-with-socat container-with-curl /bin/bash`. Then I can run the command `curl container-with-socat:9001` in terminal, and I will get `People are awesome!`, which is written in output file.
