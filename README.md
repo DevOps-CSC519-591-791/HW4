@@ -118,7 +118,11 @@ for i in `seq 1 $1`; do
 done
 ```
 
-I first tried to get the redis container ip address and read the current number of ips from the first argument of command. After that I will generate a new port and use `docker-compose scale` to scale the app service to certain number. And at last I will add ports to redis key (serverSet). I used the [redis-bash-cli](https://github.com/caquino/redis-bash) to access redis from bash script directly. For some reason, after docker-compose scale, the data in redis will be reset. So when I add ports to redis key, I will actually enter a loop and add the original and new ports one by one to keep the data consistency (You can check the content of serverSet key in redis by running the command `redis-bash-cli -h $REDIS_IP SMEMBERS serverSet`). You can run the script of spawn/scale new container by the command `bash container-creator.sh [num of scale service]`.
+I first tried to get the redis container ip address and read the current number of ips from the first argument of command.
+
+> Actually the ip address of docker container starts from `172.18.0.1` and increase one when a new container is built. But hard-coded ip address is not a decent way.
+
+ After that I will generate a new port and use `docker-compose scale` to scale the app service to certain number. And at last I will add ports to redis key (serverSet). I used the [redis-bash-cli](https://github.com/caquino/redis-bash) to access redis from bash script directly. For some reason, after docker-compose scale, the data in redis will be reset. So when I add ports to redis key, I will actually enter a loop and add the original and new ports one by one to keep the data consistency (You can check the content of serverSet key in redis by running the command `redis-bash-cli -h $REDIS_IP SMEMBERS serverSet`). You can run the script of spawn/scale new container by the command `bash container-creator.sh [num of scale service]`.
 
 > eg. For first time spawn/scale an app container, I can run the command `bash container-creator.sh 1`. It will tell the bash script that the current number of ip is 1 and the newly-generated port is `3001`. Also, docker-compose will scale the app container to 2. Since there is one app container is already running after `docker-compose up`, scale the app container to 2 is actually add another app containers. And the script will also keep data in redis consist. For next time you want to spawn/scale an app container, you can just run the command `bash container-creator.sh 2`.
 
@@ -216,3 +220,6 @@ RUN apt-get -y install curl
 ```
 
 The container-with-curl docker image is also based to Ubuntu 14.04. And I installed curl to access the data from container-with-socat. I build this image by the command `docker build -f Dockerfile-container-with-curl -t container-with-curl .` and I ran the container and enter its terminal by the command `docker run -it --rm --name container-with-curl --link container-with-socat container-with-curl /bin/bash`. Then I can run the command `curl container-with-socat:9001` in terminal, and I will get `People are awesome!`, which is written in output file.
+
+#### Tips for Docker Compose
+Docker compose can use host entries created by docker in `/etc/hosts`. In this homework, I used `redis` instead of `127.0.0.1` in [/App/app.js#L12](https://github.ncsu.edu/zhu6/HW4/blob/master/App/app.js#L12) and used `hw4_app_[num]` instead of `0.0.0.0` in [/Proxy/proxy.js#L15](https://github.ncsu.edu/zhu6/HW4/blob/master/Proxy/proxy.js#L15).
